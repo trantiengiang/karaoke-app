@@ -280,6 +280,12 @@ const Order = ({ navigate }) => {
         })
             .then(res => {
                 console.log('Phản hồi từ API orders:', res.status, res.statusText);
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
+                }
                 return res.json();
             })
             .then(data => {
@@ -372,12 +378,45 @@ const BookingReturn = ({ navigate }) => {
 };
 
 const OrderReturn = ({ navigate }) => {
+    const [status, setStatus] = useState('Đang xử lý...');
+
     useEffect(() => {
-        alert('Thanh toán hoàn tất! Vui lòng kiểm tra email xác nhận.');
-        navigate('/rooms');
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+
+        if (orderId) {
+            fetch(`/api/orders/check-payment-status?orderId=${orderId}`)
+                .then(res => {
+                    if (!res.ok) {
+                        return res.text().then(text => {
+                            console.error('Phản hồi không phải JSON:', text);
+                            throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                        });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.paymentStatus === 'completed') {
+                        alert('Thanh toán thành công! Vui lòng kiểm tra email xác nhận.');
+                        setStatus('Thanh toán thành công!');
+                    } else {
+                        alert('Thanh toán thất bại. Vui lòng thử lại.');
+                        setStatus('Thanh toán thất bại.');
+                    }
+                    setTimeout(() => navigate('/rooms'), 2000);
+                })
+                .catch(err => {
+                    console.error('Lỗi kiểm tra trạng thái:', err);
+                    setStatus('Lỗi khi kiểm tra trạng thái.');
+                    setTimeout(() => navigate('/rooms'), 2000);
+                });
+        } else {
+            setStatus('Không tìm thấy đơn hàng.');
+            setTimeout(() => navigate('/rooms'), 2000);
+        }
     }, [navigate]);
-    return <div>Đang xử lý...</div>;
-    
+
+    return <div>{status}</div>;
 };
 
 const LoginPage = ({ navigate, setUser }) => {
@@ -401,6 +440,12 @@ const LoginPage = ({ navigate, setUser }) => {
                 console.log('Phản hồi đăng nhập:', res.status, res.statusText);
                 if (res.status === 401) {
                     throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
+                }
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
                 }
                 return res.json();
             })
@@ -474,6 +519,12 @@ const RegisterPage = ({ navigate, setUser }) => {
                 console.log('Phản hồi đăng ký:', res.status, res.statusText);
                 if (res.status === 400) {
                     throw new Error('Tên đăng nhập hoặc email đã tồn tại');
+                }
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
                 }
                 return res.json();
             })
@@ -604,7 +655,7 @@ const AdminPage = ({ navigate }) => {
         if (roomForm.image instanceof File) {
             formData.append('image', roomForm.image);
         } else if (roomForm.image && isEditingRoom) {
-            formData.append('image', roomForm.image);
+            formData.append('existingImage', roomForm.image);
         }
         console.log('Gửi dữ liệu phòng:', {
             name: roomForm.name,
@@ -622,6 +673,12 @@ const AdminPage = ({ navigate }) => {
         })
             .then(res => {
                 console.log('Phản hồi từ API rooms:', res.status, res.statusText);
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
+                }
                 return res.json();
             })
             .then(data => {
@@ -669,7 +726,7 @@ const AdminPage = ({ navigate }) => {
         if (menuForm.image instanceof File) {
             formData.append('image', menuForm.image);
         } else if (menuForm.image && isEditingMenu) {
-            formData.append('image', menuForm.image);
+            formData.append('existingImage', menuForm.image);
         }
         console.log('Gửi dữ liệu món:', {
             name: menuForm.name,
@@ -752,6 +809,12 @@ const AdminPage = ({ navigate }) => {
         })
             .then(res => {
                 console.log('Phản hồi từ API delete room:', res.status, res.statusText);
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
+                }
                 return res.json();
             })
             .then(data => {
@@ -777,6 +840,12 @@ const AdminPage = ({ navigate }) => {
         })
             .then(res => {
                 console.log('Phản hồi từ API delete menu:', res.status, res.statusText);
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
+                }
                 return res.json();
             })
             .then(data => {
@@ -802,6 +871,12 @@ const AdminPage = ({ navigate }) => {
         })
             .then(res => {
                 console.log('Phản hồi từ API cancel booking:', res.status, res.statusText);
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
+                }
                 return res.json();
             })
             .then(data => {
@@ -1029,6 +1104,12 @@ const UserManagementPage = ({ navigate }) => {
                 if (res.status === 401) {
                     throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
                 }
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
+                }
                 return res.json();
             })
             .then(data => {
@@ -1080,6 +1161,12 @@ const UserManagementPage = ({ navigate }) => {
                 if (res.status === 401) {
                     throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
                 }
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
+                }
                 return res.json();
             })
             .then(data => {
@@ -1119,6 +1206,12 @@ const UserManagementPage = ({ navigate }) => {
                 console.log('Phản hồi từ API delete user:', res.status, res.statusText);
                 if (res.status === 401) {
                     throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+                }
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('Phản hồi không phải JSON:', text);
+                        throw new Error(`Phản hồi không hợp lệ: ${res.status} ${res.statusText}`);
+                    });
                 }
                 return res.json();
             })

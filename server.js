@@ -72,9 +72,20 @@ app.use('/api/orders', orderRoutes);
 
 app.use(express.static('public'));
 
-app.get('*', (req, res) => {
-    console.log('Serving index.html for unmatched route:', req.url);
+// Route để phục vụ trang order/return
+app.get('/order/return', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Catch-all route chỉ áp dụng cho GET
+app.get('*', (req, res) => {
+    console.log('Serving index.html for unmatched GET route:', req.url);
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Xử lý các phương thức không phải GET (POST, PUT, DELETE, v.v.) nếu không có route khớp
+app.use((req, res) => {
+    res.status(404).json({ message: 'Không tìm thấy tài nguyên' });
 });
 
 mongoose.set('strictQuery', true);

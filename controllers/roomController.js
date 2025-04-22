@@ -1,5 +1,4 @@
 const Room = require('../models/Room');
-const path = require('path');
 
 exports.getRooms = async (req, res) => {
     try {
@@ -15,17 +14,30 @@ exports.createRoom = async (req, res) => {
     try {
         console.log('Create room request:', { body: req.body, file: req.file });
         const { name, capacity, pricePerHour, equipment } = req.body;
+
         if (!name || !capacity || !pricePerHour) {
-            return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+            return res.status(400).json({ message: 'Tên, sức chứa và giá mỗi giờ là bắt buộc' });
         }
+
+        const parsedCapacity = parseInt(capacity);
+        const parsedPricePerHour = parseFloat(pricePerHour);
+
+        if (isNaN(parsedCapacity) || parsedCapacity <= 0) {
+            return res.status(400).json({ message: 'Sức chứa phải là số dương' });
+        }
+        if (isNaN(parsedPricePerHour) || parsedPricePerHour <= 0) {
+            return res.status(400).json({ message: 'Giá mỗi giờ phải là số dương' });
+        }
+
         const room = new Room({
             name,
-            capacity: parseInt(capacity),
-            pricePerHour: parseFloat(pricePerHour),
+            capacity: parsedCapacity,
+            pricePerHour: parsedPricePerHour,
             equipment: equipment ? equipment.split(',').map(e => e.trim()) : [],
             image: req.file ? `/uploads/${req.file.filename}` : null,
             status: 'available'
         });
+
         await room.save();
         res.status(201).json(room);
     } catch (err) {
@@ -37,18 +49,33 @@ exports.createRoom = async (req, res) => {
 exports.updateRoom = async (req, res) => {
     try {
         console.log('Update room request:', { body: req.body, file: req.file });
-        const { name, capacity, pricePerHour, equipment } = req.body;
+        const { name, capacity, pricePerHour, equipment, existingImage } = req.body;
+
+        if (!name || !capacity || !pricePerHour) {
+            return res.status(400).json({ message: 'Tên, sức chứa và giá mỗi giờ là bắt buộc' });
+        }
+
+        const parsedCapacity = parseInt(capacity);
+        const parsedPricePerHour = parseFloat(pricePerHour);
+
+        if (isNaN(parsedCapacity) || parsedCapacity <= 0) {
+            return res.status(400).json({ message: 'Sức chứa phải là số dương' });
+        }
+        if (isNaN(parsedPricePerHour) || parsedPricePerHour <= 0) {
+            return res.status(400).json({ message: 'Giá mỗi giờ phải là số dương' });
+        }
+
         const room = await Room.findById(req.params.id);
         if (!room) {
             return res.status(404).json({ message: 'Phòng không tồn tại' });
         }
-        room.name = name || room.name;
-        room.capacity = capacity ? parseInt(capacity) : room.capacity;
-        room.pricePerHour = pricePerHour ? parseFloat(pricePerHour) : room.pricePerHour;
+
+        room.name = name;
+        room.capacity = parsedCapacity;
+        room.pricePerHour = parsedPricePerHour;
         room.equipment = equipment ? equipment.split(',').map(e => e.trim()) : room.equipment;
-        if (req.file) {
-            room.image = `/uploads/${req.file.filename}`;
-        }
+        room.image = req.file ? `/uploads/${req.file.filename}` : (existingImage || room.image);
+
         await room.save();
         res.json(room);
     } catch (err) {
